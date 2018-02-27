@@ -1,6 +1,6 @@
 package tuco.newsparsing.crawler
 
-class SettingsSpec extends TestSpec {
+class SettingsSpec extends TestFlatSpec {
 
   behavior of "Settings"
 
