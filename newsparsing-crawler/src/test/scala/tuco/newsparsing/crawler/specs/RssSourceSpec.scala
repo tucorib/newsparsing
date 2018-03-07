@@ -5,6 +5,7 @@ import akka.actor.Props
 import scala.concurrent.ExecutionContext
 import java.time.ZonedDateTime
 import scala.concurrent.duration._
+import akka.testkit.TestProbe
 
 class RssNewsSourceSpec extends TestKitSpec(ActorSystem("RssNewsSourceSpec")) {
 
@@ -29,29 +30,23 @@ class RssNewsSourceSpec extends TestKitSpec(ActorSystem("RssNewsSourceSpec")) {
   }
 
   it must "receive correct article when crawling" in {
+    // Test probe
+    val probe = TestProbe()
     // Get actor ref
-    val rssSourceActor = system.actorOf(Props(classOf[RssNewsSource], MockServer.testRssSourceId))
+    val rssSourceActor = system.actorOf(Props(classOf[RssFeedDownloader], probe.ref))
     // Tell crawling
-    val crawlFuture = rssSourceActor ! Crawl
+    val crawlFuture = rssSourceActor ! DownloadRssFeed(MockServer.testRssSourceId)
+
     // Expect only one message back
-    val messages = expectMsgType[Seq[Article]]
+    val message = probe.expectMsgType[ExtractRssFeedEntry]
     // Expect no more message
-    expectNoMessage(2.seconds)
-    // Check message
-    messages.foreach {
-      // Article expected
-      case Article(id, title, text, publishedDate, updatedDate) =>
-        // Expect correct id
-        assert(id == "http://localhost:8080/article.html")
-        // Expect content
-        title shouldNot be ('empty)
-        text shouldNot be ('empty)
-        // Expect correct dates
-        publishedDate should be ('defined)
-        assert(ZonedDateTime.parse("2004-10-19T11:09:11-04:00").isEqual(publishedDate.get))
-        updatedDate shouldNot be ('defined)
-      // Error if not Article
-      case _ => assert(false)
-    }
+    probe.expectNoMessage(2.seconds)
+
+    // Expect correct id
+    assert(message.entryUri == "http://localhost:8080/article.html")
+    // Expect correct dates
+    message.entryPublishedDate should be ('defined)
+    assert(ZonedDateTime.parse("2004-10-19T11:09:11-04:00").isEqual(message.entryPublishedDate.get))
+    message.entryUpdatedDate shouldNot be ('defined)
   }
 }

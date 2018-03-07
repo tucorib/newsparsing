@@ -8,58 +8,94 @@ import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader
 import scala.collection.JavaConverters._
 import com.intenthq.gander.Gander
-import com.google.common.io.Resources
-import java.nio.charset.Charset
+import akka.http.scaladsl.Http
 import akka.actor.ActorSystem
 import akka.actor.Props
 import com.intenthq.gander.PageInfo
 import java.time.ZonedDateTime
 import java.time.ZoneId
+import scala.concurrent.Future
+import scala.util.{ Failure, Success }
+import akka.http.scaladsl.model._
+import java.io.InputStream
+import java.io.StringReader
+import akka.util.ByteString
+import akka.stream.ActorMaterializer
+import akka.stream.ActorMaterializerSettings
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.actor.ActorRef
 
-abstract class NewsSource(sourceId: String) extends Actor {
+class RssFeedDownloader(entryExtracter: ActorRef) extends Actor {
 
-  def receive = {
-    case Crawl => sender ! crawl
-  }
+  import akka.pattern.pipe
+  import context.dispatcher
 
-  def crawl(): Seq[Article]
-
-}
-
-class RssNewsSource(sourceId: String) extends NewsSource(sourceId: String) {
-
-  val configUrl = Settings().getSourceRssFeedUrl(sourceId)
+  val http = Http(context.system)
   val input = new SyndFeedInput
 
-  def crawl(): Seq[Article] = {
-    configUrl match {
-      case Some(url) =>
-        // Get feed URL
-        val feedUrl = new URL(url)
-        // Get feed content
-        val feed: SyndFeed = input.build(new XmlReader(feedUrl))
-        // Get feed entries as scala seq
-        val entries = feed.getEntries.asScala
-        // Iterate on RSS entries
-        for {
-          entry <- entries
-          // Get raw HTML from entry URL
-          rawHTML = Resources.toString(new URL(entry.getUri), Charset.forName("UTF8"))
-          // Extract informations from raw HTML
-          pageInfo <- Gander.extract(rawHTML)
+  final implicit val system = ActorSystem("NewsparsingCrawlerSystem")
+  final implicit val materializer = ActorMaterializer(ActorMaterializerSettings(context.system))
 
-          // Id
-          id = entry.getUri
-          // Title
-          title = pageInfo.processedTitle
-          // Text
-          text = pageInfo.cleanedText
-          // Published date
-          publishedDate = Option(entry.getPublishedDate).flatMap(pd => Some(ZonedDateTime.ofInstant(pd.toInstant, ZoneId.of("UTC"))))
-          // Updated date
-          updatedDate = Option(entry.getUpdatedDate).flatMap(ud => Some(ZonedDateTime.ofInstant(ud.toInstant, ZoneId.of("UTC"))))
-        } yield Article(id, title, text, publishedDate, updatedDate)
-      case None => Seq[Article]()
-    }
+  def receive = {
+    case DownloadRssFeed(sourceId) =>
+      Settings().getSourceRssFeedUrl(sourceId).foreach { feedUri =>
+        http.singleRequest(HttpRequest(uri = feedUri)) // Request feed URI
+          .flatMap(httpResponse => Unmarshal(httpResponse.entity).to[String]) // Get request content
+          .onComplete {
+            case Success(rawHTML) =>
+              // Get feed content
+              val feed: SyndFeed = input.build(new StringReader(rawHTML))
+              // Get feed entries as scala seq
+              val entries = feed.getEntries.asScala
+              // Iterate on RSS entries
+              entries.foreach { entry =>
+                // Published date
+                val entryPublishedDate = Option(entry.getPublishedDate).flatMap(pd => Some(ZonedDateTime.ofInstant(pd.toInstant, ZoneId.of("UTC"))))
+                // Updated date
+                val entryUpdatedDate = Option(entry.getUpdatedDate).flatMap(ud => Some(ZonedDateTime.ofInstant(ud.toInstant, ZoneId.of("UTC"))))
+                // Transfer
+                entryExtracter ! ExtractRssFeedEntry(sourceId, entry.getUri, entryPublishedDate, entryUpdatedDate)
+              }
+            case Failure(_) => sys.error("something wrong")
+          }
+      }
   }
+}
+
+class RssFeedEntryExtracter(articleHandler: ActorRef) extends Actor {
+
+  import akka.pattern.pipe
+  import context.dispatcher
+
+  val http = Http(context.system)
+
+  final implicit val system = ActorSystem("NewsparsingCrawlerSystem")
+  final implicit val materializer = ActorMaterializer(ActorMaterializerSettings(context.system))
+
+  def receive = {
+    case ExtractRssFeedEntry(sourceId, entryUri, entryPublishedDate, entryUpdatedDate) =>
+      http.singleRequest(HttpRequest(uri = entryUri))
+        .flatMap(httpResponse => Unmarshal(httpResponse.entity).to[String])
+        .onComplete {
+          case Success(rawHTML) =>
+            // Extract informations from raw HTML
+            val pageInfo = Gander.extract(rawHTML)
+
+            // Id
+            val id = entryUri
+            // Title
+            val title = pageInfo.flatMap(pi => Some(pi.processedTitle))
+            // Text
+            val text = pageInfo.flatMap(_.cleanedText)
+            // Published date
+            val publishedDate = entryPublishedDate
+            // Updated date
+            val updatedDate = entryUpdatedDate
+
+            // Transfer article
+            articleHandler ! ExtractedRssFeedEntry(sourceId, Article(id, title, text, publishedDate, updatedDate))
+          case Failure(_) => sys.error("something wrong")
+        }
+  }
+
 }
