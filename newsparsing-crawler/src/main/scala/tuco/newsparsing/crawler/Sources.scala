@@ -16,7 +16,7 @@ import com.intenthq.gander.PageInfo
 import java.time.ZonedDateTime
 import java.time.ZoneId
 
-abstract class Source(sourceId: String) extends Actor {
+abstract class NewsSource(sourceId: String) extends Actor {
 
   def receive = {
     case Crawl => sender ! crawl
@@ -26,7 +26,7 @@ abstract class Source(sourceId: String) extends Actor {
 
 }
 
-class RssSource(sourceId: String) extends Source(sourceId: String) {
+class RssNewsSource(sourceId: String) extends NewsSource(sourceId: String) {
 
   val configUrl = Settings().getSourceRssFeedUrl(sourceId)
   val input = new SyndFeedInput
