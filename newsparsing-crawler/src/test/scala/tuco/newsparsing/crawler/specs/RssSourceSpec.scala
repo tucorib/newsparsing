@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext
 import java.time.ZonedDateTime
 import scala.concurrent.duration._
 
-class RssSourceSpec extends TestKitSpec(ActorSystem("RssSourceSpec")) {
+class RssNewsSourceSpec extends TestKitSpec(ActorSystem("RssNewsSourceSpec")) {
 
   override def beforeAll {
     // super call
@@ -30,7 +30,7 @@ class RssSourceSpec extends TestKitSpec(ActorSystem("RssSourceSpec")) {
 
   it must "receive correct article when crawling" in {
     // Get actor ref
-    val rssSourceActor = system.actorOf(Props(classOf[RssSource], MockServer.testRssSourceId))
+    val rssSourceActor = system.actorOf(Props(classOf[RssNewsSource], MockServer.testRssSourceId))
     // Tell crawling
     val crawlFuture = rssSourceActor ! Crawl
     // Expect only one message back
