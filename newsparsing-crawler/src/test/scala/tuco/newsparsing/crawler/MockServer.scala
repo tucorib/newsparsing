@@ -19,11 +19,23 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.io.Source
 import akka.actor.ActorSystem
+import java.time.ZonedDateTime
 
 object MockServer {
 
   // Test source id
   val testRssSourceId = "test-rss"
+
+  // Expected article id
+  val expectedId = "http://localhost:8080/article.html"
+  val expectedPublishedDate = ZonedDateTime.parse("2004-10-19T11:09:11-04:00")
+  val expectedUpdatedDate = None
+
+  def apply(implicit system: ActorSystem) = new MockServer()
+
+}
+
+class MockServer(implicit system: ActorSystem) {
 
   // Test HTTP server routes
   def routes: Route = {
@@ -45,14 +57,12 @@ object MockServer {
       }
   }
 
-  private implicit val system = ActorSystem("NewsparsingCrawler")
   private implicit val materializer = ActorMaterializer()
   private implicit val ec: ExecutionContext = system.dispatcher
 
   private var bindingFuture: Future[Http.ServerBinding] = _
 
   def start() = {
-
     val conf = ConfigFactory.load("http")
     bindingFuture = Http().bindAndHandle(
       handler   = routes,
@@ -64,6 +74,6 @@ object MockServer {
   }
 
   def stop() = {
-    bindingFuture.map(_.unbind()).foreach(_ => system.terminate)
+    bindingFuture.map(_.unbind())
   }
 }
