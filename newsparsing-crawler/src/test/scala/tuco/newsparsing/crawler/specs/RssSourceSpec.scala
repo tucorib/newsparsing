@@ -6,8 +6,9 @@ import scala.concurrent.ExecutionContext
 import java.time.ZonedDateTime
 import scala.concurrent.duration._
 import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
 
-class RssNewsSourceSpec extends TestKitSpec(ActorSystem("RssNewsSourceSpec")) {
+class RssNewsSourceSpec extends TestKitSpec(ActorSystem("NewsparsingCrawlerSystem", ConfigFactory.load("test"))) {
 
   override def beforeAll {
     // super call
