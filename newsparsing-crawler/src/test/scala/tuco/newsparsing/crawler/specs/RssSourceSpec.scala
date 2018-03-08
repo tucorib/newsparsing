@@ -30,7 +30,7 @@ class RssNewsSourceSpec extends TestKitSpec(ActorSystem("NewsparsingCrawlerSyste
     Settings().getSourceRssFeedUrl(MockServer.testRssSourceId) should be ('defined)
   }
 
-  it must "receive correct article when crawling" in {
+  it must "extract correct entry data from feed" in {
     // Test probe
     val probe = TestProbe()
     // Get actor ref
@@ -38,16 +38,37 @@ class RssNewsSourceSpec extends TestKitSpec(ActorSystem("NewsparsingCrawlerSyste
     // Tell crawling
     val crawlFuture = rssSourceActor ! DownloadRssFeed(MockServer.testRssSourceId)
 
-    // Expect only one message back
+    // Expect ExtractRssFeedEntry message back
     val message = probe.expectMsgType[ExtractRssFeedEntry]
-    // Expect no more message
-    probe.expectNoMessage(2.seconds)
 
+    // Expect correct sourceId
+    assert(message.sourceId == MockServer.testRssSourceId)
     // Expect correct id
     assert(message.entryUri == "http://localhost:8080/article.html")
     // Expect correct dates
     message.entryPublishedDate should be ('defined)
     assert(ZonedDateTime.parse("2004-10-19T11:09:11-04:00").isEqual(message.entryPublishedDate.get))
     message.entryUpdatedDate shouldNot be ('defined)
+  }
+
+  it must "extract correct article" in {
+    // Test probe
+    val probe = TestProbe()
+    // Get actor ref
+    val rssSourceActor = system.actorOf(Props(classOf[RssFeedEntryExtracter], probe.ref))
+    // Tell extracting
+    val crawlFuture = rssSourceActor ! ExtractRssFeedEntry(MockServer.testRssSourceId, "http://localhost:8080/article.html", Some(ZonedDateTime.parse("2004-10-19T11:09:11-04:00")), None)
+
+    // Expect ExtractedRssFeedEntry message
+    val message = probe.expectMsgType[ExtractedRssFeedEntry]
+
+    // Expect correct sourceId
+    assert(message.sourceId == MockServer.testRssSourceId)
+    // Expect corrrect article id
+    assert(message.article.id == "http://localhost:8080/article.html")
+    // Expect corrrect article dates
+    message.article.publishedDate should be ('defined)
+    assert(ZonedDateTime.parse("2004-10-19T11:09:11-04:00").isEqual(message.article.publishedDate.get))
+    message.article.updatedDate shouldNot be ('defined)
   }
 }
