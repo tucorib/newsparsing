@@ -24,6 +24,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.actor.ActorRef
+import akka.actor.ActorLogging
 
 class RssFeedDownloader(entryExtracter: ActorRef) extends Actor {
 
@@ -33,8 +34,8 @@ class RssFeedDownloader(entryExtracter: ActorRef) extends Actor {
   val http = Http(context.system)
   val input = new SyndFeedInput
 
-  final implicit val system = ActorSystem("NewsparsingCrawlerSystem")
-  final implicit val materializer = ActorMaterializer(ActorMaterializerSettings(context.system))
+  private final implicit val system = ActorSystem("NewsparsingCrawlerSystem")
+  private final implicit val materializer = ActorMaterializer(ActorMaterializerSettings(context.system))
 
   def receive = {
     case DownloadRssFeed(sourceId) =>
@@ -56,7 +57,7 @@ class RssFeedDownloader(entryExtracter: ActorRef) extends Actor {
                 // Transfer
                 entryExtracter ! ExtractRssFeedEntry(sourceId, entry.getUri, entryPublishedDate, entryUpdatedDate)
               }
-            case Failure(_) => sys.error("something wrong")
+            case Failure(_) => sender ! _
           }
       }
   }
@@ -69,8 +70,8 @@ class RssFeedEntryExtracter(articleHandler: ActorRef) extends Actor {
 
   val http = Http(context.system)
 
-  final implicit val system = ActorSystem("NewsparsingCrawlerSystem")
-  final implicit val materializer = ActorMaterializer(ActorMaterializerSettings(context.system))
+  private final implicit val system = ActorSystem("NewsparsingCrawlerSystem")
+  private final implicit val materializer = ActorMaterializer(ActorMaterializerSettings(context.system))
 
   def receive = {
     case ExtractRssFeedEntry(sourceId, entryUri, entryPublishedDate, entryUpdatedDate) =>
@@ -94,7 +95,7 @@ class RssFeedEntryExtracter(articleHandler: ActorRef) extends Actor {
 
             // Transfer article
             articleHandler ! ExtractedRssFeedEntry(sourceId, Article(id, title, text, publishedDate, updatedDate))
-          case Failure(_) => sys.error("something wrong")
+          case Failure(_) => sender ! _
         }
   }
 

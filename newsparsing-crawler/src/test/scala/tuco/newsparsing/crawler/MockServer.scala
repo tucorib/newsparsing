@@ -1,6 +1,5 @@
 package tuco.newsparsing.crawler
 
-import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpEntity, ContentTypes }
@@ -19,6 +18,7 @@ import akka.event.Logging
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.io.Source
+import akka.actor.ActorSystem
 
 object MockServer {
 
@@ -45,7 +45,7 @@ object MockServer {
       }
   }
 
-  private implicit val system = ActorSystem(Logging.simpleName(this).replaceAll("\\$", ""))
+  private implicit val system = ActorSystem("NewsparsingCrawler")
   private implicit val materializer = ActorMaterializer()
   private implicit val ec: ExecutionContext = system.dispatcher
 
