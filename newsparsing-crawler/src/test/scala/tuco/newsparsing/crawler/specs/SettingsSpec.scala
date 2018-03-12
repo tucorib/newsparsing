@@ -1,12 +1,14 @@
 package tuco.newsparsing.crawler
 
-class SettingsSpec extends TestFlatSpec {
+import org.scalatest.FlatSpec
+
+class SettingsSpec extends FlatSpec with TestSpec {
 
   behavior of "Settings"
 
   it must "throw Exception if load method in called more than once" in {
     assertThrows[Exception] {
-      Settings.load(settings_test)
+      Settings.load("test")
     }
   }
 }

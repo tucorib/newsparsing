@@ -34,7 +34,6 @@ class RssFeedDownloader(entryExtracter: ActorRef) extends Actor {
   val http = Http(context.system)
   val input = new SyndFeedInput
 
-  private final implicit val system = ActorSystem("NewsparsingCrawlerSystem")
   private final implicit val materializer = ActorMaterializer(ActorMaterializerSettings(context.system))
 
   def receive = {
@@ -70,7 +69,6 @@ class RssFeedEntryExtracter(articleHandler: ActorRef) extends Actor {
 
   val http = Http(context.system)
 
-  private final implicit val system = ActorSystem("NewsparsingCrawlerSystem")
   private final implicit val materializer = ActorMaterializer(ActorMaterializerSettings(context.system))
 
   def receive = {
@@ -94,7 +92,7 @@ class RssFeedEntryExtracter(articleHandler: ActorRef) extends Actor {
             val updatedDate = entryUpdatedDate
 
             // Transfer article
-            articleHandler ! ExtractedRssFeedEntry(sourceId, Article(id, title, text, publishedDate, updatedDate))
+            articleHandler ! Article(sourceId, id, title, text, publishedDate, updatedDate)
           case Failure(_) => sender ! _
         }
   }
