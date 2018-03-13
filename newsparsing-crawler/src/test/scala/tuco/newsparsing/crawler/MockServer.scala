@@ -1,25 +1,27 @@
 package tuco.newsparsing.crawler
 
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpEntity, ContentTypes }
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.Directives._
-import scala.concurrent.Future
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.scalatest.Suite
-import akka.http.scaladsl.server.HttpApp
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Promise
-import akka.Done
-import scala.concurrent.ExecutionContext
-import akka.http.scaladsl.settings.ServerSettings
-import akka.event.Logging
+import java.time.ZonedDateTime
+
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.io.Source
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSystem
-import java.time.ZonedDateTime
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.server.Directives._enhanceRouteWithConcatenation
+import akka.http.scaladsl.server.Directives._segmentStringToPathMatcher
+import akka.http.scaladsl.server.Directives.complete
+import akka.http.scaladsl.server.Directives.get
+import akka.http.scaladsl.server.Directives.path
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.settings.ServerSettings
+import akka.stream.ActorMaterializer
 
 object MockServer {
 
