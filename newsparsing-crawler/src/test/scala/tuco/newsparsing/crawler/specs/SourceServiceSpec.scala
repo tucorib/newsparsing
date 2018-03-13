@@ -1,14 +1,18 @@
 package tuco.newsparsing.crawler.specs
 
-import tuco.newsparsing.crawler.TestKitSpec
-import tuco.newsparsing.crawler.SourceService
-import tuco.newsparsing.crawler.Article
-import tuco.newsparsing.crawler.MockServer
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.scaladsl.Keep
+import akka.stream.testkit.scaladsl.TestSink
+import tuco.newsparsing.crawler.{ Article, ExtractRssFeedEntry, MockServer, SourceService, TestKitSpec }
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import org.scalatest.Inspectors
 
-class SourceServiceSpec extends TestKitSpec {
+class SourceServiceSpec extends TestKitSpec with Inspectors {
 
   val mockServer = MockServer(system)
-  val service = SourceService(system)
+
+  private implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system))
 
   override def beforeAll {
     super.beforeAll()
@@ -22,23 +26,66 @@ class SourceServiceSpec extends TestKitSpec {
 
   behavior of "Source service"
 
-  it must "extract correct article" in {
-    // Execute service
-    service.crawlSource(MockServer.testRssSourceId, testActor)
+  it must "crawl correct feed entries" in {
+    // Get service
+    val service = SourceService(system)
 
-    // Expect ExtractedRssFeedEntry message
-    val message = expectMsgType[Article]
+    // Crawl
+    val seq = Await.result(service.crawl(MockServer.testRssSourceId), 1.seconds)
+
+    forAll (seq) {
+      message =>
+        {
+          // Expect correct sourceId
+          assert(message.sourceId == MockServer.testRssSourceId)
+          // Expect correct article id
+          assert(message.entryUri == MockServer.expectedId)
+          // Expect correct article dates
+          message.entryPublishedDate should be ('defined)
+          assert(MockServer.expectedPublishedDate.isEqual(message.entryPublishedDate.get))
+          message.entryUpdatedDate shouldNot be ('defined)
+        }
+    }
+  }
+
+  it must "extract correct data" in {
+    // Get service
+    val service = SourceService(system)
+    // Extract
+    val article = Await.result(service.extract(ExtractRssFeedEntry(MockServer.testRssSourceId, MockServer.expectedId, Some(MockServer.expectedPublishedDate), None)), 1.seconds)
 
     // Expect correct sourceId
-    assert(message.sourceId == MockServer.testRssSourceId)
+    assert(article.sourceId == MockServer.testRssSourceId)
     // Expect correct article id
-    assert(message.id == MockServer.expectedId)
+    assert(article.id == MockServer.expectedId)
     // Expect defined article content
-    message.title should be ('defined)
-    message.text should be ('defined)
+    article.title should be ('defined)
+    article.text should be ('defined)
     // Expect correct article dates
-    message.publishedDate should be ('defined)
-    assert(MockServer.expectedPublishedDate.isEqual(message.publishedDate.get))
-    message.updatedDate shouldNot be ('defined)
+    article.publishedDate should be ('defined)
+    assert(MockServer.expectedPublishedDate.isEqual(article.publishedDate.get))
+    article.updatedDate shouldNot be ('defined)
+  }
+
+  it must "stream correct article" in {
+    // Get service
+    val service = SourceService(system)
+    // Get service stream
+    val (queue, probe) = service.source.toMat(TestSink.probe[Article])(Keep.both).run()
+    // Push message
+    queue.offer(MockServer.testRssSourceId)
+
+    val article = probe.requestNext()
+    // Expect correct sourceId
+    assert(article.sourceId == MockServer.testRssSourceId)
+    // Expect correct article id
+    assert(article.id == MockServer.expectedId)
+    // Expect defined article content
+    article.title should be ('defined)
+    article.text should be ('defined)
+    // Expect correct article dates
+    article.publishedDate should be ('defined)
+    assert(MockServer.expectedPublishedDate.isEqual(article.publishedDate.get))
+    article.updatedDate shouldNot be ('defined)
   }
 }

@@ -1,10 +1,12 @@
 package tuco.newsparsing.crawler
 
-import org.scalatest.{ Suites, BeforeAndAfterAll, Matchers, FlatSpec, FlatSpecLike }
-import akka.testkit.{ TestKit, ImplicitSender }
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Suite
+import org.scalatest.Matchers
+import org.scalatest.BeforeAndAfterAll
+import akka.testkit.TestKit
+import org.scalatest.FlatSpecLike
 
 trait TestSpec extends Matchers with BeforeAndAfterAll { this: Suite =>
 
