@@ -18,6 +18,7 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import akka.stream.scaladsl.Source
+import tuco.newsparsing.data.Article
 
 object SourceService {
 

@@ -43,7 +43,7 @@ class MockServer(implicit system: ActorSystem) {
   def routes: Route = {
     path("test-feed.xml") {
       get {
-        val buffer = Source.fromFile("src/test/raw/feed.xml")
+        val buffer = Source.fromURL(getClass.getResource("/raw/feed.xml"))
         val content = buffer.getLines.mkString
         buffer.close
         complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, content))
@@ -51,7 +51,7 @@ class MockServer(implicit system: ActorSystem) {
     } ~
       path("article.html") {
         get {
-          val buffer = Source.fromFile("src/test/raw/article.html")
+          val buffer = Source.fromURL(getClass.getResource("/raw/article.html"))
           val content = buffer.getLines.mkString
           buffer.close
           complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, content))
@@ -67,10 +67,10 @@ class MockServer(implicit system: ActorSystem) {
   def start() = {
     val conf = ConfigFactory.load("http")
     bindingFuture = Http().bindAndHandle(
-      handler   = routes,
+      handler = routes,
       interface = conf.getString("host"),
-      port      = conf.getInt("port"),
-      settings  = ServerSettings(system))
+      port = conf.getInt("port"),
+      settings = ServerSettings(system))
 
     Await.ready(bindingFuture, Duration.Inf)
   }
