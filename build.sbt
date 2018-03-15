@@ -6,14 +6,8 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.12.3",
   
   libraryDependencies ++= Seq(
-    "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-    "com.rometools" % "rome" % "1.9.0",
-    "com.intenthq" %% "gander" % "1.4",
-    "com.typesafe.akka" %% "akka-http" % "10.1.0",
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
-    "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
-    "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
     "org.scalatest" %% "scalatest" % "3.0.4" % Test,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.8.0",
     "ch.qos.logback" % "logback-classic" % "1.2.3"
@@ -31,6 +25,12 @@ lazy val crawler = (project in file("newsparsing-crawler"))
   .settings(
   	commonSettings,
   	name := "newsparsing-crawler",
+  	libraryDependencies ++= Seq(
+  	  "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+      "com.rometools" % "rome" % "1.9.0",
+      "com.intenthq" %% "gander" % "1.4",
+      "com.typesafe.akka" %% "akka-http" % "10.1.0",
+  	)
   )
   .dependsOn(data)
 
@@ -38,5 +38,9 @@ lazy val articles = (project in file("newsparsing-articles"))
   .settings(
   	commonSettings,
   	name := "newsparsing-articles",
+  	libraryDependencies ++= Seq(
+  	  "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
+  	  "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
+  	)
   )
   .dependsOn(data)
