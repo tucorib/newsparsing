@@ -25,6 +25,7 @@ class ArticlePersister(sourceId: String, articleId: String) extends PersistentAc
   val receiveCommand: Receive = {
     case article: Article =>
       persistAll(onReceiveArticle(article)) { articleEvent => updateState(articleEvent) }
+      sender ! new ArticleSaved(article.sourceId, article.id)
   }
 
   private def updateState(articleEvent: ArticleEvent) =

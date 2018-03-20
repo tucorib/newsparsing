@@ -1,7 +1,7 @@
 package tuco.newsparsing.articles
 
 import akka.actor.ActorSystem
-import tuco.newsparsing.data.Article
+import akka.stream.ActorMaterializer
 
 object ArticleService {
 
@@ -11,5 +11,6 @@ object ArticleService {
 
 class ArticleService(implicit system: ActorSystem) {
 
-  def storeArticle(article: Article) = ???
+  private implicit val materializer = ActorMaterializer()
+
 }
