@@ -41,6 +41,8 @@ lazy val articles = (project in file("newsparsing-articles"))
   	libraryDependencies ++= Seq(
   	  "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
   	  "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
+  	  "io.spray" %%  "spray-json" % "1.3.3",
+  	  "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1" % "test",
   	),
   	fork := true
   )
