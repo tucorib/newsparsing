@@ -4,6 +4,8 @@ import akka.persistence.PersistentActor
 import tuco.newsparsing.data.Article
 import scala.collection.immutable.Seq
 
+case object GetState
+
 class ArticlePersister(sourceId: String, articleId: String) extends PersistentActor {
 
   override def persistenceId = s"$sourceId-$articleId"
@@ -26,6 +28,8 @@ class ArticlePersister(sourceId: String, articleId: String) extends PersistentAc
   }
 
   val receiveCommand: Receive = {
+    case GetState =>
+      sender ! state
     case article: Article =>
       persistAll(onReceiveArticle(article)) { articleEvent => updateState(articleEvent) }
       sender ! new ArticleSaved(article.sourceId, article.id)
@@ -34,7 +38,7 @@ class ArticlePersister(sourceId: String, articleId: String) extends PersistentAc
   private def updateState(articleEvent: ArticleEvent) =
     articleEvent match {
       case ArticleCreated(title, text, publishedDate, updatedDate) => state = Some(Article(sourceId, articleId, title, text, publishedDate, updatedDate))
-      case ArticleTitleUpdated(title, updatedDate)                 => state = state.map(_.copy(title = title, updatedDate = updatedDate))
-      case ArticleTextUpdated(text, updatedDate)                   => state = state.map(_.copy(text = text, updatedDate = updatedDate))
+      case ArticleTitleUpdated(title, updatedDate) => state = state.map(_.copy(title = title, updatedDate = updatedDate))
+      case ArticleTextUpdated(text, updatedDate) => state = state.map(_.copy(text = text, updatedDate = updatedDate))
     }
 }

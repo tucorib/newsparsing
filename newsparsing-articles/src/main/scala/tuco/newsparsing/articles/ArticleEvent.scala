@@ -64,7 +64,7 @@ object ArticleJsonProtocol extends DefaultJsonProtocol {
                 fields.get("updated").map(_.convertTo[ZonedDateTime])
             )
           case Seq(JsString("text-update")) =>
-            ArticleTitleUpdated(
+            ArticleTextUpdated(
                 fields.get("text").map(_.convertTo[String]),
                 fields.get("updated").map(_.convertTo[ZonedDateTime])
             )

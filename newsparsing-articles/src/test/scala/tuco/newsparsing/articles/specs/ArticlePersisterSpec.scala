@@ -7,6 +7,8 @@ import tuco.newsparsing.articles.ArticlePersister
 import tuco.newsparsing.data.Article
 import scala.concurrent.duration._
 import tuco.newsparsing.articles.ArticleSaved
+import tuco.newsparsing.articles.GetState
+import akka.actor.PoisonPill
 
 class ArticlePersisterSpec extends TestKitSpec with Inspectors {
 
@@ -23,7 +25,7 @@ class ArticlePersisterSpec extends TestKitSpec with Inspectors {
     expectNoMessage(2.seconds)
   }
 
-  it must "send back a single ArticleSaved message after each update or creation" in {
+  it must "send back a single ArticleSaved message after each update or creation and read correct article after restart" in {
     val actorRef = system.actorOf(Props(classOf[ArticlePersister], testRssSourceId, expectedId))
 
     // Creation
@@ -37,5 +39,19 @@ class ArticlePersisterSpec extends TestKitSpec with Inspectors {
     // Multiple updates
     actorRef ! new Article(testRssSourceId, expectedId, Some("Title2"), Some("Text3"), Some(expectedPublishedDate), expectedUpdatedDate)
     expectMsg[ArticleSaved](new ArticleSaved(testRssSourceId, expectedId))
+
+    actorRef ! GetState
+    expectMsg[Option[Article]](Some(new Article(testRssSourceId, expectedId, Some("Title2"), Some("Text3"), Some(expectedPublishedDate), expectedUpdatedDate)))
+
+    // Kill initial actor
+    actorRef ! PoisonPill
+
+    // Create actor for same reference
+    val sameActorRef = system.actorOf(Props(classOf[ArticlePersister], testRssSourceId, expectedId))
+
+    // Get state
+    sameActorRef ! GetState
+    expectMsg[Option[Article]](Some(new Article(testRssSourceId, expectedId, Some("Title2"), Some("Text3"), Some(expectedPublishedDate), expectedUpdatedDate)))
   }
+
 }
