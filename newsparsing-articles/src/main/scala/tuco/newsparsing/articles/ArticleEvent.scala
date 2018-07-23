@@ -15,11 +15,11 @@ object ArticleJsonProtocol extends DefaultJsonProtocol {
 
   implicit object ZoneDateTimeFormat extends JsonFormat[ZonedDateTime] {
 
-    def write(d: ZonedDateTime) = JsString(DateTimeFormatter.ISO_INSTANT.format(d))
+    def write(d: ZonedDateTime) = JsString(DateTimeFormatter.ISO_ZONED_DATE_TIME.format(d))
 
-        def read(v: JsValue) = v match {
-        case JsString(d) => ZonedDateTime.parse(d, DateTimeFormatter.ISO_INSTANT)
-        case _ => deserializationError(f"Unable to deserialize $v")
+    def read(v: JsValue) = v match {
+      case JsString(d) => ZonedDateTime.parse(d, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+      case _ => deserializationError(f"Unable to deserialize $v")
     }
   }
 
