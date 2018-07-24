@@ -12,7 +12,10 @@ lazy val commonSettings = Seq(
     "com.typesafe.scala-logging" %% "scala-logging" % "3.8.0",
     "ch.qos.logback" % "logback-classic" % "1.2.3"
   ),
-  parallelExecution in Test := false
+  parallelExecution in Test := false,
+  
+  resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
+  resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
 )
 
 lazy val data = (project in file("newsparsing-data"))
@@ -40,9 +43,11 @@ lazy val articles = (project in file("newsparsing-articles"))
   	name := "newsparsing-articles",
   	libraryDependencies ++= Seq(
   	  "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
+  	  "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
   	  "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
   	  "io.spray" %%  "spray-json" % "1.3.3",
   	  "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1" % "test",
+  	  "com.safety-data" %% "akka-persistence-redis" % "0.4.0",
   	),
   	fork := true
   )
