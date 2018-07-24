@@ -1,12 +1,15 @@
 package tuco.newsparsing.crawler.specs
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+
+import org.scalatest.Inspectors
+
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSink
-import tuco.newsparsing.crawler.{ Article, ExtractRssFeedEntry, MockServer, SourceService, TestKitSpec }
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import org.scalatest.Inspectors
+import tuco.newsparsing.crawler.{ ExtractRssFeedEntry, MockServer, SourceService, TestKitSpec }
+import tuco.newsparsing.data.Article
 
 class SourceServiceSpec extends TestKitSpec with Inspectors {
 
